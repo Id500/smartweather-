@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Smart Weather AI — Next-Generation Meteorological Intelligence combining real-time Open-Meteo telemetry with Scikit-Learn Machine Learning weather forecasting.">
+    <meta name="theme-color" content="#080d1a">
+    <title>Smart Weather AI | ML Weather Forecaster & Meteorological Intelligence</title>
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9B%85%3C/text%3E%3C/svg%3E">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Plotly.js CDN -->
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- App Container -->
+    <div class="app-layout">
+        
+        <!-- Header Brand Banner -->
+        <header class="brand-banner" role="banner">
+            <div class="brand-left">
+                <div class="brand-logo" aria-hidden="true">⛅</div>
+                <div>
+                    <h1 class="brand-title">Smart Weather AI</h1>
+                    <div class="brand-subtitle">
+                        Next-Gen ML Meteorological Forecaster • 
+                        <span id="activeCityTitle" class="city-highlight">Chennai, India</span> 
+                        <span id="coordBadge" class="coord-badge">(Lat: 13.0878°, Lon: 80.2785°)</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="brand-right">
+                <div class="unit-toggle-group" role="group" aria-label="Temperature Unit Selection">
+                    <span class="unit-label">Unit:</span>
+                    <button class="unit-btn active" id="unitCBtn" onclick="setUnit('C')" aria-label="Celsius">°C</button>
+                    <button class="unit-btn" id="unitFBtn" onclick="setUnit('F')" aria-label="Fahrenheit">°F</button>
+                </div>
+                <div id="liveFeedBadge" class="badge-live">
+                    <span class="pulse-dot"></span> Live Open-Meteo Feed
+                </div>
+                <button class="refresh-btn" id="refreshBtn" onclick="refreshData()" title="Refresh telemetry" aria-label="Refresh telemetry">
+                    🔄 Refresh
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Wrapper -->
+        <main>
+            <!-- Top Controls: Search Bar & 1-Click Demo Buttons -->
+            <section class="controls-section glass-card" aria-label="Search and preset cities">
+                <div class="search-bar-wrapper">
+                    <span class="search-icon" aria-hidden="true">🔍</span>
+                    <input type="text" id="citySearchInput" class="search-input" 
+                           placeholder="Search any city worldwide (e.g. Tokyo, Berlin, San Francisco...)" 
+                           autocomplete="off" aria-label="Search city name">
+                    <div id="searchResultsDropdown" class="search-dropdown hidden" role="listbox"></div>
+                </div>
+
+                <div class="demo-cities-bar">
+                    <span class="demo-label">⚡ 1-Click Demo Presets:</span>
+                    <div class="demo-chips" role="group" aria-label="Preset cities">
+                        <button class="demo-chip active" onclick="selectCity('Chennai', 'India', 13.0878, 80.2785, 'Asia/Kolkata')" aria-label="Select Chennai">🇮🇳 Chennai</button>
+                        <button class="demo-chip" onclick="selectCity('New York', 'United States', 40.7128, -74.0060, 'America/New_York')" aria-label="Select New York">🇺🇸 New York</button>
+                        <button class="demo-chip" onclick="selectCity('London', 'United Kingdom', 51.5074, -0.1278, 'Europe/London')" aria-label="Select London">🇬🇧 London</button>
+                        <button class="demo-chip" onclick="selectCity('Tokyo', 'Japan', 35.6895, 139.6917, 'Asia/Tokyo')" aria-label="Select Tokyo">🇯🇵 Tokyo</button>
+                        <button class="demo-chip" onclick="selectCity('Paris', 'France', 48.8566, 2.3522, 'Europe/Paris')" aria-label="Select Paris">🇫🇷 Paris</button>
+                        <button class="demo-chip" onclick="selectCity('Dubai', 'United Arab Emirates', 25.2048, 55.2708, 'Asia/Dubai')" aria-label="Select Dubai">🇦🇪 Dubai</button>
+                        <button class="demo-chip" onclick="selectCity('Sydney', 'Australia', -33.8688, 151.2093, 'Australia/Sydney')" aria-label="Select Sydney">🇦🇺 Sydney</button>
+                        <button class="demo-chip" onclick="selectCity('San Francisco', 'United States', 37.7749, -122.4194, 'America/Los_Angeles')" aria-label="Select San Francisco">🇺🇸 San Francisco</button>
+                        <button class="demo-chip" onclick="selectCity('Mumbai', 'India', 19.0760, 72.8777, 'Asia/Kolkata')" aria-label="Select Mumbai">🇮🇳 Mumbai</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Loading Indicator Overlay -->
+            <div id="loadingOverlay" class="loading-overlay hidden" role="status" aria-live="polite">
+                <div class="spinner" aria-hidden="true"></div>
+                <div class="loading-text">Fetching atmospheric telemetry & training Random Forest model...</div>
+            </div>
+
+            <!-- Hero Section: Current Weather & 6 Atmospheric Metric Tiles -->
+            <section class="current-weather-grid" aria-label="Current Weather Conditions">
+                <!-- Hero Card -->
+                <div class="hero-card glass-card">
+                    <div class="hero-condition">
+                        <span id="heroIcon" class="hero-cond-icon" aria-hidden="true">☀️</span>
+                        <span id="heroConditionText">Clear Sky</span>
+                    </div>
+                    <div class="hero-temp-display">
+                        <span id="heroTemp">--</span><span class="hero-temp-unit" id="heroTempUnit">°C</span>
+                    </div>
+                    <div class="hero-subinfo">
+                        Feels like <b id="heroFeelsLike">--</b> • High: <b id="heroTodayMax" class="temp-high">--</b> / Low: <b id="heroTodayMin" class="temp-low">--</b>
+                    </div>
+                    <div class="hero-footer">
+                        📍 <span id="heroCityName">Chennai</span> • <span id="heroTimestamp">Observed Just Now</span>
+                    </div>
+                </div>
+
+                <!-- 6 Atmospheric Metric Tiles -->
+                <div class="metric-tiles-grid">
+                    <div class="metric-tile glass-card">
+                        <div class="metric-label">Relative Humidity</div>
+                        <div class="metric-value"><span id="mHumidity">--</span><span class="metric-unit">%</span></div>
+                        <div class="metric-sub">Moisture saturation</div>
+                    </div>
+                    <div class="metric-tile glass-card">
+                        <div class="metric-label">Wind Velocity</div>
+                        <div class="metric-value"><span id="mWind">--</span><span class="metric-unit">km/h</span></div>
+                        <div class="metric-sub">At 10m altitude</div>
+                    </div>
+                    <div class="metric-tile glass-card">
+                        <div class="metric-label">Surface Pressure</div>
+                        <div class="metric-value"><span id="mPressure">--</span><span class="metric-unit">hPa</span></div>
+                        <div class="metric-sub">Barometric level</div>
+                    </div>
+                    <div class="metric-tile glass-card">
+                        <div class="metric-label">Rain Probability</div>
+                        <div class="metric-value"><span id="mRainProb">--</span><span class="metric-unit">%</span></div>
+                        <div class="metric-sub">Daily peak chance</div>
+                    </div>
+                    <div class="metric-tile glass-card">
+                        <div class="metric-label">Precipitation Volume</div>
+                        <div class="metric-value"><span id="mPrecip">--</span><span class="metric-unit">mm</span></div>
+                        <div class="metric-sub">Expected rainfall</div>
+                    </div>
+                    <div class="metric-tile glass-card">
+                        <div class="metric-label">UV Solar Index</div>
+                        <div class="metric-value"><span id="mUv" style="color: #34d399;">--</span><span class="metric-unit">/11</span></div>
+                        <div class="metric-sub" id="mUvDesc">Moderate</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Official 7-Day Forecast Cards -->
+            <section class="section-container" aria-label="7-Day Weather Forecast">
+                <h2 class="section-title">📅 Official 7-Day Meteorological Forecast</h2>
+                <div id="forecastCardsRow" class="forecast-cards-row">
+                    <!-- Injected dynamically via main.js -->
+                </div>
+            </section>
+
+            <!-- Main Navigation Tabs -->
+            <nav class="tabs-nav" role="tablist" aria-label="Dashboard sections">
+                <button class="tab-btn active" role="tab" aria-selected="true" onclick="switchTab('tab-ml')">🤖 ML Temperature Forecaster</button>
+                <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('tab-analytics')">📊 Weather Analytics & Trends</button>
+                <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('tab-insights')">⚡ Smart Insights & Risk Index</button>
+                <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('tab-compare')">🏙️ Multi-City Comparison Studio</button>
+                <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('tab-arch')">ℹ️ System Architecture</button>
+            </nav>
+
+            <!-- TAB 1: ML Forecaster -->
+            <div id="tab-ml" class="tab-pane active" role="tabpanel">
+                <!-- ML Hero Showcase Card -->
+                <div class="ml-hero-card glass-card">
+                    <div class="ml-header">
+                        <div>
+                            <span class="ml-badge">Random Forest Regressor (Scikit-Learn)</span>
+                            <h3 class="ml-title">Next-Day Maximum Temperature Prediction</h3>
+                        </div>
+                        <div class="ml-target-date">
+                            Target Date: <b id="mlTargetDate">Tomorrow</b>
+                        </div>
+                    </div>
+
+                    <div class="ml-pred-grid">
+                        <div class="ml-pred-box">
+                            <div class="ml-box-label">ML Predicted Next-Day Max</div>
+                            <div class="ml-box-val" id="mlPredVal">--</div>
+                            <div class="ml-box-sub" id="mlConfidenceInterval">Confidence Interval: [-- - --]</div>
+                        </div>
+                        <div class="ml-pred-box">
+                            <div class="ml-box-label" style="color: #38bdf8;">Official Open-Meteo Forecast</div>
+                            <div class="ml-box-val" id="mlOfficialVal" style="background: linear-gradient(135deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">--</div>
+                            <div class="ml-box-sub">Physics numerical simulation</div>
+                        </div>
+                        <div class="ml-pred-box">
+                            <div class="ml-box-label" style="color: #34d399;">Model vs Official Variance</div>
+                            <div class="ml-box-val" id="mlVarianceVal" style="background: linear-gradient(135deg, #34d399, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">--</div>
+                            <div class="ml-box-sub">Close concordance indicates high reliability</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Evaluation Metrics -->
+                <h4 class="sub-title">📊 Rigorous Held-Out Evaluation (Chronological Split)</h4>
+                <p class="caption-text">Evaluated on held-out unseen consecutive daily records. Strictly chronological train/test split prevents temporal data leakage.</p>
+
+                <div class="eval-grid">
+                    <div class="metric-tile glass-card">
+                        <div class="metric-label">Model Test MAE</div>
+                        <div class="metric-value" style="color: #34d399;" id="mlMae">--</div>
+                        <div class="metric-sub">Mean Absolute Error</div>
+                    </div>
+                    <div class="metric-tile glass-card">
+                        <div class="metric-label">Model Test RMSE</div>
+                        <div class="metric-value" style="color: #38bdf8;" id="mlRmse">--</div>
+                        <div class="metric-sub">Root Mean Squared Error</div>
+                    </div>
+                    <div class="metric-tile glass-card">
+                        <div class="metric-label">Baseline MAE</div>
+                        <div class="metric-value" style="color: #fbbf24;" id="mlBaseMae">--</div>
+                        <div class="metric-sub">Persistence (Tomorrow = Today)</div>
+                    </div>
+                    <div class="metric-tile glass-card">
+                        <div class="metric-label">Baseline Outperformance</div>
+                        <div class="metric-value" style="color: #a855f7;" id="mlImprovement">--</div>
+                        <div class="metric-sub">Error reduction over baseline</div>
+                    </div>
+                </div>
+
+                <!-- Charts Row: Actual vs Pred & Feature Importance -->
+                <div class="charts-row">
+                    <div class="chart-col glass-card">
+                        <div id="chartActualVsPred" class="plotly-chart-box"></div>
+                    </div>
+                    <div class="chart-col glass-card">
+                        <div id="chartFeatureImp" class="plotly-chart-box"></div>
+                    </div>
+                </div>
+
+                <!-- Methodology Card -->
+                <div class="glass-card methodology-card">
+                    <h4 class="card-heading">🔬 How the Machine Learning Pipeline Operates</h4>
+                    <ol class="method-list">
+                        <li><b>Data Ingestion:</b> Up to 500 days of real daily observations (maximum, minimum, and mean temperatures, precipitation, wind speed, relative humidity, and surface pressure) are retrieved from Open-Meteo's historical reanalysis archive.</li>
+                        <li><b>Temporal Feature Engineering:</b> We engineer autoregressive lag features (lag 1, 2, 3, 7 days), rolling 7-day temperature trends, diurnal range (Max - Min), and cyclical sine/cosine encodings of the day-of-year to capture seasonal oscillation without data leakage.</li>
+                        <li><b>Strict Chronological Split:</b> We partition the historical dataset chronologically (earliest 80% for training, most recent 20% held out for testing). Zero future data is ever leaked to the training algorithm.</li>
+                        <li><b>Ensemble Training:</b> An ensemble of 120 decision trees (Random Forest Regressor) with tree-depth regularization learns non-linear microclimate dependencies.</li>
+                        <li><b>Benchmark Baseline:</b> The model is continuously benchmarked against a <i>Persistence Baseline</i> (predicting tomorrow's max equals today's max).</li>
+                    </ol>
+                    <div class="disclaimer-text">
+                        * Notice: The ML prediction is an experimental demonstration model designed for hackathon evaluation and should be compared against the official physics-based numerical model.
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: Weather Analytics & History -->
+            <div id="tab-analytics" class="tab-pane" role="tabpanel">
+                <div class="glass-card">
+                    <div id="chartHistTemp" class="plotly-chart-box" style="height: 380px;"></div>
+                </div>
+
+                <div class="charts-row" style="margin-top: 20px;">
+                    <div class="chart-col glass-card">
+                        <div id="chartRainfall" class="plotly-chart-box"></div>
+                    </div>
+                    <div class="chart-col glass-card">
+                        <div id="chartForecastCurve" class="plotly-chart-box"></div>
+                    </div>
+                </div>
+
+                <div class="glass-card" style="margin-top: 20px;">
+                    <div id="chartDualAtm" class="plotly-chart-box" style="height: 340px;"></div>
+                </div>
+            </div>
+
+            <!-- TAB 3: Smart Insights & Risk Index -->
+            <div id="tab-insights" class="tab-pane" role="tabpanel">
+                <div class="risk-overview-row">
+                    <div class="glass-card risk-gauge-card">
+                        <div class="metric-label">Composite Weather Risk Index</div>
+                        <div class="risk-score-display" id="riskScoreVal">--<span class="risk-max">/100</span></div>
+                        <div><span id="riskTierPill" class="risk-pill risk-mod">Moderate Risk</span></div>
+                        <p class="caption-text" style="margin-top: 14px;">
+                            Integrates rain probability, precipitation volume, wind gust velocity, thermal index, and thunderstorm convective alerts.
+                        </p>
+                    </div>
+                    <div class="glass-card risk-factors-card">
+                        <h4 class="card-heading">Hazard Contributing Factors:</h4>
+                        <div id="riskFactorsList" class="factors-list">
+                            <!-- Injected dynamically via main.js -->
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="section-title" style="margin-top: 28px;">💡 Actionable Rule-Based Insights</h3>
+                <div id="insightsList">
+                    <!-- Injected dynamically via main.js -->
+                </div>
+
+                <div class="disclaimer-banner">
+                    ℹ️ <b>Transparency & Safety Notice:</b> These insights are informational heuristics formulated from live atmospheric sensor readings and standard meteorological thresholds. They do not constitute official emergency management or civil defense advisories.
+                </div>
+            </div>
+
+            <!-- TAB 4: Multi-City Comparison Studio -->
+            <div id="tab-compare" class="tab-pane" role="tabpanel">
+                <div class="compare-selector-bar glass-card">
+                    <div class="compare-city-col">
+                        <span class="compare-tag">City A (Primary):</span>
+                        <h3 id="compareCityAName" style="margin: 4px 0 0 0; color: #38bdf8;">Chennai</h3>
+                    </div>
+                    <div class="compare-vs-badge" aria-hidden="true">VS</div>
+                    <div class="compare-city-col">
+                        <label class="compare-tag" for="cityBSelect">Select City B for Comparison:</label>
+                        <select id="cityBSelect" class="city-select" onchange="runComparison()">
+                            <option value="New York" data-country="United States" data-lat="40.7128" data-lon="-74.0060">🇺🇸 New York (United States)</option>
+                            <option value="London" data-country="United Kingdom" data-lat="51.5074" data-lon="-0.1278">🇬🇧 London (United Kingdom)</option>
+                            <option value="Tokyo" data-country="Japan" data-lat="35.6895" data-lon="139.6917">🇯🇵 Tokyo (Japan)</option>
+                            <option value="Paris" data-country="France" data-lat="48.8566" data-lon="2.3522">🇫🇷 Paris (France)</option>
+                            <option value="Dubai" data-country="United Arab Emirates" data-lat="25.2048" data-lon="55.2708">🇦🇪 Dubai (United Arab Emirates)</option>
+                            <option value="Sydney" data-country="Australia" data-lat="-33.8688" data-lon="151.2093">🇦🇺 Sydney (Australia)</option>
+                            <option value="San Francisco" data-country="United States" data-lat="37.7749" data-lon="-122.4194">🇺🇸 San Francisco (United States)</option>
+                            <option value="Mumbai" data-country="India" data-lat="19.0760" data-lon="72.8777">🇮🇳 Mumbai (India)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="compare-cards-row">
+                    <div id="compareCardA" class="glass-card compare-detail-card" style="border-top: 4px solid #38bdf8;">
+                        <!-- Injected via JS -->
+                    </div>
+                    <div id="compareCardB" class="glass-card compare-detail-card" style="border-top: 4px solid #a855f7;">
+                        <!-- Injected via JS -->
+                    </div>
+                </div>
+
+                <div class="glass-card" style="margin-top: 20px;">
+                    <div id="chartComparisonCurve" class="plotly-chart-box" style="height: 360px;"></div>
+                </div>
+            </div>
+
+            <!-- TAB 5: System Architecture -->
+            <div id="tab-arch" class="tab-pane" role="tabpanel">
+                <div class="charts-row">
+                    <div class="chart-col glass-card">
+                        <h4 class="card-heading" style="color: #38bdf8;">🛠️ Technology Stack</h4>
+                        <ul class="method-list">
+                            <li><b>Backend:</b> Python 3.10+ with Flask RESTful API & JSON endpoints</li>
+                            <li><b>Machine Learning:</b> Scikit-Learn (Random Forest Regressor, 120 trees)</li>
+                            <li><b>Data Crunching:</b> Pandas & NumPy (Temporal Lag Feature Engineering)</li>
+                            <li><b>Frontend & Charts:</b> Modern Vanilla HTML5, CSS Glassmorphism & Plotly.js</li>
+                            <li><b>Telemetry:</b> Open-Meteo REST APIs (Geocoding, Forecast, Archive)</li>
+                            <li><b>Model Serialization:</b> Joblib + Memory Caching</li>
+                        </ul>
+                    </div>
+                    <div class="chart-col glass-card">
+                        <h4 class="card-heading" style="color: #a855f7;">🌐 Open-Meteo REST Endpoints</h4>
+                        <ul class="method-list">
+                            <li><code>geocoding-api.open-meteo.com/v1/search</code>: Worldwide fuzzy coordinate lookup</li>
+                            <li><code>api.open-meteo.com/v1/forecast</code>: Real-time sensor feeds & 7-day outlook</li>
+                            <li><code>archive-api.open-meteo.com/v1/archive</code>: Historical observations for ML training</li>
+                            <li><b>Zero API Keys Required:</b> Fully open, rate-limited and cached respectfully</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="glass-card" style="margin-top: 20px;">
+                    <h4 class="card-heading">🚀 Quick Start Commands</h4>
+                    <div class="code-box">
+                        <code>python app.py</code>
+                    </div>
+                    <p class="caption-text" style="margin-top: 10px;">
+                        Runs locally on <b>http://127.0.0.1:5000</b>. Open in any browser for immediate evaluation.
+                    </p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer" role="contentinfo">
+            Smart Weather AI • Hackathon Edition • Developed with Python, Flask, Scikit-Learn, Plotly & Open-Meteo
+        </footer>
+    </div>
+
+    <!-- Main JavaScript Logic -->
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
