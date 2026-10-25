@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Smart Weather AI — Next-Generation Meteorological Intelligence combining real-time Open-Meteo telemetry with Scikit-Learn Machine Learning weather forecasting.">
+    <meta name="description" content="Smart Weather AI — Next-Generation Meteorological Intelligence combining real-time Open-Meteo telemetry with Random Forest machine learning weather forecasting.">
     <meta name="theme-color" content="#080d1a">
     <title>Smart Weather AI | ML Weather Forecaster & Meteorological Intelligence</title>
     <!-- Favicon -->
@@ -84,6 +84,8 @@
                 <div class="loading-text">Fetching atmospheric telemetry & training Random Forest model...</div>
             </div>
 
+            <div id="weatherError" class="disclaimer-banner hidden" role="alert"></div>
+
             <!-- Hero Section: Current Weather & 6 Atmospheric Metric Tiles -->
             <section class="current-weather-grid" aria-label="Current Weather Conditions">
                 <!-- Hero Card -->
@@ -161,7 +163,7 @@
                 <div class="ml-hero-card glass-card">
                     <div class="ml-header">
                         <div>
-                            <span class="ml-badge">Random Forest Regressor (Scikit-Learn)</span>
+                            <span class="ml-badge">Random Forest Regressor</span>
                             <h3 class="ml-title">Next-Day Maximum Temperature Prediction</h3>
                         </div>
                         <div class="ml-target-date">
@@ -333,8 +335,8 @@
                     <div class="chart-col glass-card">
                         <h4 class="card-heading" style="color: #38bdf8;">🛠️ Technology Stack</h4>
                         <ul class="method-list">
-                            <li><b>Backend:</b> Python 3.10+ with Flask RESTful API & JSON endpoints</li>
-                            <li><b>Machine Learning:</b> Scikit-Learn (Random Forest Regressor, 120 trees)</li>
+                            <li><b>Backend:</b> Netlify Functions with RESTful JSON endpoints</li>
+                            <li><b>Machine Learning:</b> Random Forest Regressor, 120 trees</li>
                             <li><b>Data Crunching:</b> Pandas & NumPy (Temporal Lag Feature Engineering)</li>
                             <li><b>Frontend & Charts:</b> Modern Vanilla HTML5, CSS Glassmorphism & Plotly.js</li>
                             <li><b>Telemetry:</b> Open-Meteo REST APIs (Geocoding, Forecast, Archive)</li>
@@ -355,10 +357,10 @@
                 <div class="glass-card" style="margin-top: 20px;">
                     <h4 class="card-heading">🚀 Quick Start Commands</h4>
                     <div class="code-box">
-                        <code>python app.py</code>
+                        <code>netlify dev --port 8889</code>
                     </div>
                     <p class="caption-text" style="margin-top: 10px;">
-                        Runs locally on <b>http://127.0.0.1:5000</b>. Open in any browser for immediate evaluation.
+                        Runs locally on <b>http://localhost:8889</b>. Open in any browser for immediate evaluation.
                     </p>
                 </div>
             </div>
@@ -366,7 +368,7 @@
 
         <!-- Footer -->
         <footer class="app-footer" role="contentinfo">
-            Smart Weather AI • Hackathon Edition • Developed with Python, Flask, Scikit-Learn, Plotly & Open-Meteo
+            Smart Weather AI • Hackathon Edition • Developed with Netlify, Random Forest, Plotly & Open-Meteo
         </footer>
     </div>
 

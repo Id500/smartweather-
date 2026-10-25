@@ -1,0 +1,16 @@
+{
+  "name": "smart-weather-netlify",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ml-random-forest": "^2.1.0"
+  },
+  "devDependencies": {
+    "@netlify/functions": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.0"
+  }
+}

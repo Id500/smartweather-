@@ -26,7 +26,7 @@ from flask_cors import CORS
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="static")
 CORS(app)
 
 # Ensure models directory exists
