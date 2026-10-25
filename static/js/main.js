@@ -37,6 +37,12 @@ document.addEventListener("DOMContentLoaded", () => {
     loadWeatherData(appState.city);
 });
 
+function escapeHTML(value) {
+    const element = document.createElement("span");
+    element.textContent = value;
+    return element.innerHTML;
+}
+
 // Helper for Temp Unit Formatting
 function formatTemp(celsius) {
     if (celsius === null || celsius === undefined || isNaN(celsius)) return "--";
@@ -107,15 +113,20 @@ function switchTab(tabId) {
 async function loadWeatherData(city) {
     showLoading(true);
     appState.city = city;
+    const errorBanner = document.getElementById("weatherError");
+    errorBanner.classList.add("hidden");
 
     try {
         const url = `/api/weather?city=${encodeURIComponent(city.name)}&country=${encodeURIComponent(city.country || '')}&lat=${city.lat}&lon=${city.lon}&timezone=${encodeURIComponent(city.timezone || 'auto')}`;
         const res = await fetch(url);
+        if (!res.ok) throw new Error(`Request failed (${res.status})`);
         const data = await res.json();
         appState.data = data;
         renderUI(data);
     } catch (err) {
         console.error("Error loading weather telemetry:", err);
+        errorBanner.textContent = "Weather data could not be loaded. Check your connection and select Refresh to try again.";
+        errorBanner.classList.remove("hidden");
     } finally {
         showLoading(false);
     }
@@ -143,7 +154,7 @@ function renderUI(data) {
     const liveBadge = document.getElementById("liveFeedBadge");
     if (data.is_mock) {
         liveBadge.className = "badge-mock";
-        liveBadge.innerHTML = "⚠️ Offline Telemetry Mode";
+        liveBadge.textContent = data.forecast_is_mock === false ? "⚠️ Live weather · Demo historical data & ML" : "⚠️ Demo weather data";
     } else {
         liveBadge.className = "badge-live";
         liveBadge.innerHTML = '<span class="pulse-dot"></span> Live Open-Meteo Feed';
@@ -250,7 +261,7 @@ function renderMLSection(ml) {
     document.getElementById("mlMae").textContent = `${ml.mae_rf}°C`;
     document.getElementById("mlRmse").textContent = `${ml.rmse_rf}°C`;
     document.getElementById("mlBaseMae").textContent = `${ml.mae_base}°C`;
-    document.getElementById("mlImprovement").textContent = `+${ml.improvement_pct}%`;
+    document.getElementById("mlImprovement").textContent = `${ml.improvement_pct > 0 ? "+" : ""}${ml.improvement_pct}%`;
 
     // Charts: Actual vs Pred
     renderPlotlyActualVsPred(ml);
@@ -591,10 +602,13 @@ async function runComparison() {
     try {
         const url = `/api/compare?lat1=${cityA.lat}&lon1=${cityA.lon}&name1=${encodeURIComponent(cityA.name)}&lat2=${latB}&lon2=${lonB}&name2=${encodeURIComponent(cityBName)}`;
         const res = await fetch(url);
+        if (!res.ok) throw new Error(`Request failed (${res.status})`);
         const data = await res.json();
         renderComparisonUI(data.city1, data.city2);
     } catch (e) {
         console.error("Comparison error:", e);
+        document.getElementById("compareCardA").textContent = "Comparison could not be loaded. Select a city to try again.";
+        document.getElementById("compareCardB").textContent = "";
     }
 }
 
@@ -602,7 +616,7 @@ function renderComparisonUI(c1, c2) {
     const unitStr = getUnitStr();
 
     document.getElementById("compareCardA").innerHTML = `
-        <h3 style="margin: 0; color: #f8fafc;">${c1.name}</h3>
+        <h3 style="margin: 0; color: #f8fafc;">${escapeHTML(c1.name)}${c1.is_mock ? " (Demo)" : ""}</h3>
         <div style="font-size: 2.8rem; font-weight: 800; color: #ffffff; margin: 10px 0; font-family: 'JetBrains Mono', monospace;">
             ${formatTemp(c1.temp)}<span style="font-size: 1.4rem; color: #94a3b8;">${unitStr}</span>
         </div>
@@ -616,7 +630,7 @@ function renderComparisonUI(c1, c2) {
     `;
 
     document.getElementById("compareCardB").innerHTML = `
-        <h3 style="margin: 0; color: #f8fafc;">${c2.name}</h3>
+        <h3 style="margin: 0; color: #f8fafc;">${escapeHTML(c2.name)}${c2.is_mock ? " (Demo)" : ""}</h3>
         <div style="font-size: 2.8rem; font-weight: 800; color: #ffffff; margin: 10px 0; font-family: 'JetBrains Mono', monospace;">
             ${formatTemp(c2.temp)}<span style="font-size: 1.4rem; color: #94a3b8;">${unitStr}</span>
         </div>
